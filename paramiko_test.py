@@ -11,11 +11,21 @@ st.set_page_config(page_title="CIS Benchmark-CentOS", layout="wide")
 def color_fail(value):
     return f"background-color: red;" if value in "  Fail  " else None
 
-def exec_cis_script(ip_addr, port, user, password):
-    
+
+def send_audit_script(ip_addr, port, user, password):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh_client.connect(hostname=ip_addr,port=port,username=user,password=password)
-    stdin,stdout,stderr=ssh_client.exec_command("python /home/vp/cis-benchmarks-audit/cis_audit.py")
+    sftp = ssh_client.open_sftp()
+    sftp.put('E:\Projects\SIH 24\CIS Benchmark\Code\SIHCybersecurity\scripts\centos.zip', '/tmp/centos.zip')
+    ssh_client.exec_command("unzip -d /tmp /tmp/centos.zip")
+    # stdin,stdout,stderr=ssh_client.exec_command("")
+
+
+def exec_cis_script():
+    
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.connect(hostname=ip_addr,port=port,username=username,password=password)
+    stdin,stdout,stderr=ssh_client.exec_command("python /tmp/cis-benchmarks-audit-main/cis_audit.py")
     st.write("Output: ")
     for i in stdout.readlines():
         st.write(i)
@@ -38,7 +48,25 @@ with st.form(key='my_form'):
     port = st.text_input(label="Enter port: ")
     username = st.text_input(label="Enter username: ")
     password = st.text_input(label="Enter password: " ,type="password")
-    submit_button = st.form_submit_button(label='Submit')
+    save_button = st.form_submit_button(label='Save')
+    send_button = st.form_submit_button(label='Send Audit Script')
+    run_button = st.form_submit_button(label="Run Audit Script")
+
+
+# actions_container = st.container(border=True)
+
+# with actions_container:
+#     st.header("Step 1: Send audit script for evaluation")
+#     st.button(label='Send Audit Script', type='primary')
+#     st.markdown("#")
+#     st.header("Step 2: Run audit script on target machine")
+#     st.button(label='Run Audit Script', type='primary', on_click=send_audit_script)
+
+
+logs_container = st.container(border=True)
+
+logs_container.header("Logs:")
+
 
 df1 = pd.DataFrame(
     [["ID", "Desc", "Level", "Result", "Time"]], columns=("ID", "Desc", "Level", "Result", "Time")
@@ -47,6 +75,9 @@ df1 = pd.DataFrame(
 my_table = st.dataframe(df1, width=1600, hide_index=True)
 
 
-if submit_button:
+if run_button:
     print("Submited")
-    exec_cis_script(ip_addr, port, username, password)
+    exec_cis_script()
+
+if send_button:
+    send_audit_script(ip_addr, port, username, password)
